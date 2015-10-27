@@ -11,5 +11,6 @@
 #include    <string.h>
 #include    <math.h>
 
+FILE *retrieve_file(char *);
 int validate_args(int, char**);
 

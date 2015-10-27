@@ -21,9 +21,31 @@
 
 int main(int argc, char* argv[])
 {
-    if(!validate_args(argc, argv))
+    if(validate_args(argc, argv) != 0)
         exit(1);
+
+    FILE *fin;
+	if((fin = retrieve_file(argv[6])) == NULL)
+        exit(1);
+
+    fclose(fin);
     return 0;
+}
+
+/**
+ * retrieve the file argument
+ * 
+ * PARAMETERS: char *
+ * RETURNS: FILE pointer on success or NULL
+ */
+FILE *retrieve_file(char* token)
+{
+    FILE *tmp = fopen(token, "r");
+	if(tmp == NULL) {
+        fprintf(stderr, "ERROR: could open input file %s\n", token);
+        fprintf(stderr, "TERMINATING SIMULATION\n");
+    }
+	return tmp;
 }
 
 /**
@@ -42,6 +64,7 @@ int main(int argc, char* argv[])
  */
 int validate_args(int count, char* arguments[])
 {
+    // check the number of arguments
     if(count != 7) {
         fprintf(stderr, "ERROR: could not validate command line arguments\n");
         fprintf(stderr, "INFO: invalid number of arguments\n");
@@ -52,6 +75,8 @@ int validate_args(int count, char* arguments[])
     }
 
 	int val1, val2, val3;
+
+    // check that the cache and block size arguments are valid
     if((val1 = atoi(arguments[1])) <= 0 ||
        (val2 = atoi(arguments[2])) <= 0 ||
         val1 < val2) {
@@ -67,6 +92,7 @@ int validate_args(int count, char* arguments[])
         return 1;
     }
 
+    // ensure that the associativity argument is valid
     if((val3 = atoi(arguments[3])) < 0) {
         fprintf(stderr, "ERROR: could not validate command line arguments\n");
         fprintf(stderr, "INFO: assocativity must be greater than or equal to");
@@ -74,6 +100,8 @@ int validate_args(int count, char* arguments[])
         return 1;
     }
 
+    // ensure that the cache size, block size, and associativy arguments
+    // play nicely with eacher other
     if (pow(2.0, (double) val2) * pow(2.0, (double) val3) >
         pow(2.0, (double) val1)) {
         fprintf(stderr, "ERROR: could not validate command line arguments\n");
@@ -83,6 +111,7 @@ int validate_args(int count, char* arguments[])
         return 1;
     }
 
+    // validate the replacement scheme argument
     if(strcmp("fifo", arguments[4]) != 0 && strcmp("lru", arguments[4]) != 0) {
         fprintf(stderr, "ERROR: could not validate command line arguments\n");
         fprintf(stderr, "PROPER USAGE:\n");
@@ -92,6 +121,7 @@ int validate_args(int count, char* arguments[])
         return 1;
     }
 
+    // validate the trace argument
     if(strcmp("on", arguments[5]) != 0 && strcmp("off", arguments[5]) != 0) {
         fprintf(stderr, "ERROR: could not validate command line arguments\n");
         fprintf(stderr, "PROPER USAGE:\n");
