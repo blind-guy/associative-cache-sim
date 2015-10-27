@@ -11,6 +11,7 @@
 #include    <string.h>
 #include    <math.h>
 
+unsigned long get_address(char *);
 FILE *retrieve_file(char *);
 int validate_args(int, char**);
 

@@ -25,11 +25,37 @@ int main(int argc, char* argv[])
         exit(1);
 
     FILE *fin;
-	if((fin = retrieve_file(argv[6])) == NULL)
+    if((fin = retrieve_file(argv[6])) == NULL)
         exit(1);
 
+    char buff[1028];
+	unsigned long inputAddress;
+    while (fscanf(fin, "%s", buff) != EOF){
+        inputAddress = get_address(buff);
+    }
     fclose(fin);
     return 0;
+}
+
+/**
+ * determines if token is a hex or int and assigns to value and returns
+ *
+ * PARAMETERS: char*
+ */
+unsigned long get_address(char* token)
+{
+    unsigned long value;
+    if (token[0] == '-') {
+        fprintf(stderr, "TERMINAL ERROR\n");
+        fprintf(stderr, "INFO: input file contains invalid address\n");
+        fprintf(stderr, "TERMINATING SIMULATION\n");
+        exit(1);
+    }
+    if (token[1] == 'x')
+        sscanf(token, "%lx", &value);
+    else
+        sscanf(token, "%lu", &value);
+    return value;
 }
 
 /**
