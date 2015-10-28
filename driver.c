@@ -28,13 +28,39 @@ int main(int argc, char* argv[])
     if((fin = retrieve_file(argv[6])) == NULL)
         exit(1);
 
-    char buff[1028];
-	unsigned long inputAddress;
-    while (fscanf(fin, "%s", buff) != EOF){
-        inputAddress = get_address(buff);
+    struct cache *mycache;
+    mycache = init_cache(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
+    if(mycache == NULL) {
+        fclose(fin);
+        exit(1);
     }
+
+    print_cache_info(mycache);
+
+	access_addresses(fin, mycache);
+    
+    free_cache(mycache);
+
     fclose(fin);
+
     return 0;
+}
+
+/**
+ * this contains the main loop of our simulation in which we take our cache
+ * and list of addresses and conduct our memory accesses
+ *
+ * PARAMETERS: FILE *, struct cache*
+ */
+void access_addresses(FILE *in, struct cache *mycache)
+{
+    char buff[1028];
+    unsigned long inputAddress;
+    while (fscanf(in, "%s", buff) != EOF){
+        inputAddress = get_address(buff);
+        printf("Input token: %s\n", buff);
+        printf("Input address: %lu\n", inputAddress);
+    }
 }
 
 /**
@@ -59,7 +85,7 @@ unsigned long get_address(char* token)
 }
 
 /**
- * retrieve the file argument
+ * retrieve the file from file argument
  * 
  * PARAMETERS: char *
  * RETURNS: FILE pointer on success or NULL
