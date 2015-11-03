@@ -17,7 +17,8 @@
     struct cache{
         unsigned long size;
         unsigned long blockSize;
-        unsigned long sets;
+        unsigned long setCount;
+        struct set *sets;
         int associativity;
     };
 
