@@ -57,6 +57,7 @@ int main(int argc, char* argv[])
     }
     fprintf(stderr, "%lu %lu %s\n", myCache->blockSize, myCache->setCount,
             myCache->replacementMode);
+    test_cache(myCache);
     return 0;
 }
 
