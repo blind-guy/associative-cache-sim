@@ -1,188 +1,158 @@
-/*------------------------------------------------------------------------------
- *                                 DRIVER.C                                    
- *------------------------------------------------------------------------------
+/*----------------------------------------------------------------------------*/
+/*                                DRIVER.C                                    */
+/*----------------------------------------------------------------------------*/
+/* This is the main code for managing an associative cache simulator including
+ * processing arguments, initializing requisite variables for cache properties
+ * and processing accesses.
+ * 
+ * The format for the command to invoce this program is as follows:
+ * $driver n m p fifo/lru on/off filename
+ *
+ * n, m, and p are integer arguments representing the cache size, block size,
+ * and associativity respectively. These are given in log base 2 of the desired
+ * values so p=2 would represent an associativity of 4 and p=0 would represent
+ * a direct mapped cache.
+ *
+ * NOTE: if p is negative or p > n - m then the cache is fully associative
+ *
+ * n and m must be positive integers and due to the nature of caches m must
+ * be greater than or equal to n.
+ *
+ * The 4th argument to the program represents the replacement scheme given as
+ * as fifo or lru.
+ * 
+ * The 5th argument is set to either on or off for tracing.
+ * 
+ * The filename refers to a file containing a series of 32 bit addresses listed
+ * one per line and given as either integers or hex values with the preceding
+ * 0x notation.
+ *
  * AUTHOR: hvi604@my.utsa.edu
- *
- * Simulate an associative cache, the size, block size, and associativity of
- * which are  given on the command line. Replacement scheme is also specified as
- * either being lru or fifo. Tracing is specified as on or off and a file
- * containing the 32 bit addresses is given. These are written one per line and
- * may be in either hex with the preceding 0x or decimal.
- *
- * An example invocation of the program is as follows:
- * $ driver 16 6 3 fifo on addresslist.txt
- *
- * The above indicates a cache of size 2^16 bytes containing blocks of 2^6 bytes
- * with sets containing 2^3 blocks. The replacement scheme used is fifo with
- * tracing on and the addresses contained in the file "addreslist.txt"
  */
 
 #include    "driver.h"
 
 int main(int argc, char* argv[])
 {
-    if(validate_args(argc, argv) != 0)
-        exit(1);
-
-    FILE *fin;
-    if((fin = retrieve_file(argv[6])) == NULL)
-        exit(1);
-
-    struct cache *mycache;
-    mycache = init_cache(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
-    if(mycache == NULL) {
-        fclose(fin);
-        exit(1);
-    }
-
-    print_cache_info(mycache);
-
-	access_addresses(fin, mycache);
-    
-    free_cache(mycache);
-
-    fclose(fin);
-
-    return 0;
-}
-
-/**
- * this contains the main loop of our simulation in which we take our cache
- * and list of addresses and conduct our memory accesses
- *
- * PARAMETERS: FILE *, struct cache*
- */
-void access_addresses(FILE *in, struct cache *mycache)
-{
-    char buff[1028];
-    unsigned long inputAddress;
-    while (fscanf(in, "%s", buff) != EOF){
-        inputAddress = get_address(buff);
-        printf("Input token: %s\n", buff);
-        printf("Input address: %lu\n", inputAddress);
-    }
-}
-
-/**
- * determines if token is a hex or int and assigns to value and returns
- *
- * PARAMETERS: char*
- */
-unsigned long get_address(char* token)
-{
-    unsigned long value;
-    if (token[0] == '-') {
-        fprintf(stderr, "TERMINAL ERROR\n");
-        fprintf(stderr, "INFO: input file contains invalid address\n");
+    // initialize a parameters struct to hold our converted arguments
+    // and fill it using what's been given on the command line
+    Parameters *cacheParameters; 
+    cacheParameters = malloc(sizeof(Parameters));
+    if(set_parameters(argc, argv, cacheParameters) != 0){
+        fprintf(stderr, "ERROR: could not set cache parameters\n");
         fprintf(stderr, "TERMINATING SIMULATION\n");
         exit(1);
     }
-    if (token[1] == 'x')
-        sscanf(token, "%lx", &value);
-    else
-        sscanf(token, "%lu", &value);
-    return value;
+    print_parameters(cacheParameters);
 }
 
 /**
- * retrieve the file from file argument
- * 
- * PARAMETERS: char *
- * RETURNS: FILE pointer on success or NULL
+ * validate the command line arguments and set the members of the Parameters
+ * struct 
+ * PARAMETERS: the arguments array and a pointer to the Parameters struct
+ * RETURNS: 0 on success or -1 on failure
  */
-FILE *retrieve_file(char* token)
+int set_parameters(int argCount, char *arguments[], Parameters *myParameters)
 {
-    FILE *tmp = fopen(token, "r");
-	if(tmp == NULL) {
-        fprintf(stderr, "ERROR: could open input file %s\n", token);
-        fprintf(stderr, "TERMINATING SIMULATION\n");
-    }
-	return tmp;
-}
-
-/**
- * validate arguments by confirming the following:
- * -there are exactly 6 arguments excluding the program name
- * -both the cache and block size are greater than 0
- * -assocaitivity is greater than or equal to 0
- * -the cache size is greater than or equal to the block size
- * -the assocativity multiplied by the block size is equal or less than the
- *  block size
- * -the replacement scheme is either fifo or lru
- * -trace is either on or off
- *
- * PARAMETERS: int, char**
- * RETURN: 0 indicating success and 1 indicating arguments were not valid
- */
-int validate_args(int count, char* arguments[])
-{
-    // check the number of arguments
-    if(count != 7) {
-        fprintf(stderr, "ERROR: could not validate command line arguments\n");
-        fprintf(stderr, "INFO: invalid number of arguments\n");
-        fprintf(stderr, "PROPER USAGE:\n");
-        fprintf(stderr, "$ driver n m p fifo/lru on/off filename\n");
-        fprintf(stderr, "TERMINATING SIMULATION\n");
-        return 1;
+    // ensure we have the right number of arguments
+    if(argCount != 7) {
+        fprintf(stderr, "ERROR: incorrect number of arguments in invocation\n");
+        print_usage();
+        return -1;
     }
 
-	int val1, val2, val3;
-
-    // check that the cache and block size arguments are valid
-    if((val1 = atoi(arguments[1])) <= 0 ||
-       (val2 = atoi(arguments[2])) <= 0 ||
-        val1 < val2) {
-        fprintf(stderr, "ERROR: could not validate command line arguments\n");
-        fprintf(stderr, "PROPER USAGE:\n");
-        fprintf(stderr, "$ driver n m p fifo/lru on/off filename\n");
-        fprintf(stderr, "INFO: n, m, and p are the log base 2 values of cache");
-        fprintf(stderr, " size, block size, and associativity respectively.\n");
-        fprintf(stderr, "INFO: cache size and block size must be greater");
-        fprintf(stderr, " than zero and the cache size must be greater than");
-        fprintf(stderr, " or equal to the the block size\nTERMINATING");
-        fprintf(stderr, " SIMULATION\n");
-        return 1;
+    // convert the cache and block size arguments to integers and validate them
+    int cacheArg, blockArg;
+    cacheArg = atoi(arguments[1]);
+    blockArg = atoi(arguments[2]);
+    if(cacheArg <= 0) {
+        fprintf(stderr, "ERROR: first argument is log base two of cache size ");
+        fprintf(stderr, "and must be an integer greater than zero\n");
+        return -1;
+    }
+    if(blockArg <= 0) {
+        fprintf(stderr, "ERROR: second argument is log base two of cache size");
+        fprintf(stderr, " and must be an integer greater than zero\n");
+        return -1;
+    }
+    if(blockArg > cacheArg) {
+        fprintf(stderr, "ERROR: cannot set block size to be larger than cache");
+        fprintf(stderr, " size\n");
+        return -1;
     }
 
-    // ensure that the associativity argument is valid
-    if((val3 = atoi(arguments[3])) < 0) {
-        fprintf(stderr, "ERROR: could not validate command line arguments\n");
-        fprintf(stderr, "INFO: assocativity must be greater than or equal to");
-        fprintf(stderr, " zero\nTERMINATING SIMULATION\n");
-        return 1;
+    // convert the associativity argument to an integer
+    int associativityArg = atoi(arguments[3]);
+
+    // set the cacheSize and blockSize members of the Parameters struct
+    myParameters->cacheSize = (unsigned long) pow(2.0, cacheArg);
+    myParameters->blockSize = (unsigned long) pow(2.0, blockArg);
+
+    // set the associativity member of the Parameters struct
+    if(associativityArg < 0 || associativityArg > cacheArg - blockArg) {
+        myParameters->associativity = -1;
+    } else {
+        myParameters->associativity = (int) pow(2.0, associativityArg);
     }
 
-    // ensure that the cache size, block size, and associativy arguments
-    // play nicely with eacher other
-    if (pow(2.0, (double) val2) * pow(2.0, (double) val3) >
-        pow(2.0, (double) val1)) {
-        fprintf(stderr, "ERROR: could not validate command line arguments\n");
-        fprintf(stderr, "INFO: the associativity multiplied by the block size");
-        fprintf(stderr, " cannot be greater than the size of the cache\n");
-        fprintf(stderr, "TERMINATING SIMULATION\n");
-        return 1;
-    }
-
-    // validate the replacement scheme argument
+    // validate the replacement mode and set it
     if(strcmp("fifo", arguments[4]) != 0 && strcmp("lru", arguments[4]) != 0) {
-        fprintf(stderr, "ERROR: could not validate command line arguments\n");
-        fprintf(stderr, "PROPER USAGE:\n");
-        fprintf(stderr, "$ driver n m p fifo/lru on/off filename\n");
-        fprintf(stderr, "INFO: replacement scheme must be either lru or");
-        fprintf(stderr, " fifo\nTERMINATING SIMULATION\n");
-        return 1;
+        fprintf(stderr, "ERROR: replacement mode must be either fifo or lru\n");
+        print_usage();
+        return -1;
     }
+    myParameters->replacementMode = malloc(5 * sizeof(char));
+    strcpy(myParameters->replacementMode, arguments[4]);
 
-    // validate the trace argument
+    // validate trace flag argument and set the trace flag member of the
+    // Parameters struct appropriately
     if(strcmp("on", arguments[5]) != 0 && strcmp("off", arguments[5]) != 0) {
-        fprintf(stderr, "ERROR: could not validate command line arguments\n");
-        fprintf(stderr, "PROPER USAGE:\n");
-        fprintf(stderr, "$ driver n m p fifo/lru on/off filename\n");
-        fprintf(stderr, "INFO: tracing must be set to either on or off\n");
-        fprintf(stderr, "TERMINATING SIMULATION\n");
-        return 1;
+        fprintf(stderr, "ERROR: trace mode must be set to either on or off\n");
+        print_usage();
+        return -1;
     }
-
-    return 0;
+    if(strcmp("on", arguments[5]) == 0) {
+        myParameters->traceFlag = 1;
+    } else {
+        myParameters->traceFlag = 0;
+    }
+    return 0;    
 }
 
+/**
+ * print simulation program invocation information
+ */
+void print_usage()
+{
+    fprintf(stderr, "PROPER USAGE:\n\t$./driver n m p lru/fifo on/off ");
+    fprintf(stderr, "filename\n\nn, m, and p are log base two values ");
+    fprintf(stderr, "representing cache size, block size, and associativity.");
+    fprintf(stderr, " n and m must be greater than zero and cache size must ");
+    fprintf(stderr, "be greater than block size. Any value of p less than 0 ");
+    fprintf(stderr, "or greater than n - m sets the cache to being fully ");
+    fprintf(stderr, "assciative.\n\nEither fifo or lru is typed to indicate");
+    fprintf(stderr, "block replacement scheme.\n\nTrace output is set to ");
+    fprintf(stderr, "on or off.\n\nThe file containing access addresses is ");
+    fprintf(stderr, "indicated by filename.\n\n");
+}
+
+/**
+ * prints out the cache simulation parameters after they have been converted
+ * PARAMETERS: a Parameters struct containing our cache parameters
+ */
+print_parameters(Parameters *myParameters)
+{
+    fprintf(stderr, "Cache size: %lu\n", myParameters->cacheSize);
+    fprintf(stderr, "Block size: %lu\n", myParameters->blockSize);
+    fprintf(stderr, "Associaitivity: ");
+    if(myParameters->associativity < 0)
+        fprintf(stderr, "fully associative\n");
+    else
+        fprintf(stderr, "%d\n", myParameters->associativity);
+    fprintf(stderr, "Replacement scheme: %s\n", myParameters->replacementMode);
+    fprintf(stderr, "Tracing is ");
+    if(myParameters->traceFlag)
+        fprintf(stderr, "on\n");
+    else
+        fprintf(stderr, "off\n");
+}

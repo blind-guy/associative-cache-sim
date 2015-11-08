@@ -1,25 +1,32 @@
-/*------------------------------------------------------------------------------
- *                                DRIVER.H
- *------------------------------------------------------------------------------
- * contains includes and configurations for the driver functions
+/*----------------------------------------------------------------------------*/
+/*                                DRIVER.H                                    */
+/*----------------------------------------------------------------------------*/
+/* the header file for our associative cache simulator containing a cache
+ * parameter struct definition, includes, and prototypes for our driver
+ * program
  *
  * AUTHOR: hvi604@my.utsa.edu
  */
 
-#ifndef  DRIVER_H
+#ifndef DRIVER_H
     #define DRIVER_H
 
+    // include statements
     #include    <stdio.h>
     #include    <stdlib.h>
-    #include    <string.h>
     #include    <math.h>
+    #include    <string.h>
 
-    #include     "cache.h"
+    // the typedef 
+    typedef struct{
+        unsigned long cacheSize;
+        unsigned long blockSize;
+        int associativity;
+        int traceFlag;
+        char *replacementMode;
+    } Parameters;
 
-    struct cache;
-
-    void access_addresses(FILE *, struct cache *);
-    unsigned long get_address(char *);
-    FILE *retrieve_file(char *);
-    int validate_args(int, char**);
-#endif
+    // function prototypes
+    int set_parameters(int, char **, Parameters *);
+    void print_usage();
+#endif   
