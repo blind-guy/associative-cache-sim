@@ -1,8 +1,8 @@
 CC=gcc
-DEPS = driver.h
+DEPS = driver.h cache.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-cachesimulation: driver.o
-	gcc -lm -o driver driver.o -I.
+cachesimulation: driver.o cache.o
+	gcc -lm -o driver driver.o cache.o -I.

@@ -36,14 +36,28 @@ int main(int argc, char* argv[])
 {
     // initialize a parameters struct to hold our converted arguments
     // and fill it using what's been given on the command line
-    Parameters *cacheParameters; 
-    cacheParameters = malloc(sizeof(Parameters));
+    struct CacheParameters *cacheParameters; 
+    cacheParameters = malloc(sizeof(struct CacheParameters));
     if(set_parameters(argc, argv, cacheParameters) != 0){
         fprintf(stderr, "ERROR: could not set cache parameters\n");
         fprintf(stderr, "TERMINATING SIMULATION\n");
         exit(1);
     }
     print_parameters(cacheParameters);
+    struct Cache *myCache;
+    myCache = init_cache(cacheParameters->blockSize,
+                         cacheParameters->cacheSize,
+                         cacheParameters->associativity, 
+                         cacheParameters->replacementMode
+                        );
+    if(myCache == NULL) {
+        fprintf(stderr, "ERROR: could not initialize Cache\n");
+        free(cacheParameters);
+        exit(1);
+    }
+    fprintf(stderr, "%lu %lu %s\n", myCache->blockSize, myCache->setCount,
+            myCache->replacementMode);
+    return 0;
 }
 
 /**
@@ -52,7 +66,10 @@ int main(int argc, char* argv[])
  * PARAMETERS: the arguments array and a pointer to the Parameters struct
  * RETURNS: 0 on success or -1 on failure
  */
-int set_parameters(int argCount, char *arguments[], Parameters *myParameters)
+int set_parameters
+( 
+    int argCount, char *arguments[], struct CacheParameters *myParameters
+)
 {
     // ensure we have the right number of arguments
     if(argCount != 7) {
@@ -140,7 +157,7 @@ void print_usage()
  * prints out the cache simulation parameters after they have been converted
  * PARAMETERS: a Parameters struct containing our cache parameters
  */
-print_parameters(Parameters *myParameters)
+print_parameters(struct CacheParameters *myParameters)
 {
     fprintf(stderr, "Cache size: %lu\n", myParameters->cacheSize);
     fprintf(stderr, "Block size: %lu\n", myParameters->blockSize);

@@ -17,16 +17,18 @@
     #include    <math.h>
     #include    <string.h>
 
+    #include    "cache.h"
+    
     // the typedef 
-    typedef struct{
+    struct CacheParameters{
         unsigned long cacheSize;
         unsigned long blockSize;
         int associativity;
         int traceFlag;
         char *replacementMode;
-    } Parameters;
+    };
 
     // function prototypes
-    int set_parameters(int, char **, Parameters *);
+    int set_parameters(int, char **, struct CacheParameters *);
     void print_usage();
 #endif   
