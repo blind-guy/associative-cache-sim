@@ -113,7 +113,18 @@ int main(int argc, char* argv[])
 
         myBlock = NULL;
         mySet = NULL;
-    }
+    } 
+
+    // print requisite simulation information
+    fprintf(stdout, "%s\n", NAME);
+    int i;
+    for(i = 1; i < argc; i++)
+        fprintf(stdout, "%s ", argv[i]);
+    fprintf(stdout, "\n");
+    fprintf(stdout, "memory accesses: %lu\n", accessNumber);
+    fprintf(stdout, "hits: %lu\n", hits);
+    fprintf(stdout, "misses: %lu\n", misses);
+    fprintf(stdout, "miss ratio: %.8f\n", missRatio);
 
     fclose(fin);
     return 0;

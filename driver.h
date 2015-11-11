@@ -11,6 +11,9 @@
 #ifndef DRIVER_H
     #define DRIVER_H
 
+    // defines
+    #define NAME    "Elijah Arnold"
+
     // include statements
     #include    <stdio.h>
     #include    <stdlib.h>
