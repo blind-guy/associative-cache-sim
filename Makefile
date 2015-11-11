@@ -1,5 +1,5 @@
 CC=gcc
-DEPS = driver.h cache.h set.h
+DEPS = driver.h cache.h set.h block.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

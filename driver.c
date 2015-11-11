@@ -44,6 +44,15 @@ int main(int argc, char* argv[])
         exit(1);
     }
     print_parameters(cacheParameters);
+
+    // get address file
+    FILE *fin = fopen(argv[6], "r");
+    if(fin == NULL) {
+        perror("could not open file");
+        exit(1);
+    }
+
+    // initialize struct Cache
     struct Cache *myCache;
     myCache = init_cache(cacheParameters->blockSize,
                          cacheParameters->cacheSize,
@@ -58,6 +67,14 @@ int main(int argc, char* argv[])
     fprintf(stderr, "%lu %lu %s\n", myCache->blockSize, myCache->setCount,
             myCache->replacementMode);
     test_cache(myCache);
+
+    // loop through file 
+    char buff[1024]; 
+    while (fscanf(fin, "%s", buff) != EOF){
+
+    }
+
+    fclose(fin);
     return 0;
 }
 

@@ -65,6 +65,8 @@ struct Cache *init_cache
             temp->sets[count].maxBlockCount = associativity;
         else
             temp->sets[count].maxBlockCount = cacheSize / blockSize;
+        temp->sets[count].blocks = malloc(sizeof(struct Block) * 
+                                           temp->sets[count].maxBlockCount);
     }
 
     return temp;
