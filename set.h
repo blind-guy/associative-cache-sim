@@ -11,6 +11,8 @@
     #define SET_H
 
     // includes
+    #include   <stdio.h>
+
     #include   "block.h"
 
     // struct Set containing its max count, current count, and index
@@ -22,4 +24,5 @@
     };
 
     // prototypes
+    void print_set(struct Set *);
 #endif

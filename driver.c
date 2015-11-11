@@ -43,7 +43,6 @@ int main(int argc, char* argv[])
         fprintf(stderr, "TERMINATING SIMULATION\n");
         exit(1);
     }
-    print_parameters(cacheParameters);
 
     // get address file
     FILE *fin = fopen(argv[6], "r");
@@ -64,18 +63,81 @@ int main(int argc, char* argv[])
         free(cacheParameters);
         exit(1);
     }
-    fprintf(stderr, "%lu %lu %s\n", myCache->blockSize, myCache->setCount,
-            myCache->replacementMode);
-    test_cache(myCache);
 
     // loop through file 
+    unsigned long currentAddress, accessNumber, hits, misses;
+    accessNumber = 0;
+    hits = 0;
+    misses = 0;
+    struct Block *myBlock;
+    struct Set *mySet;
     char buff[1024]; 
+    double missRatio;
+    if(cacheParameters->traceFlag == 1)
+        fprintf(stdout, "  address      tag      set  h/m   hits misses accesses miss ratio tags\n");
     while (fscanf(fin, "%s", buff) != EOF){
+        accessNumber++;
+ 
+        currentAddress = get_address(buff);
+        if(cacheParameters->traceFlag == 1)
+            fprintf(stdout, "%9lx", currentAddress);
 
+        mySet = cache_lookup(myCache, currentAddress);
+        if(cacheParameters->traceFlag == 1)
+            fprintf(stdout, "%9lx%9lu", get_tag(myCache, currentAddress), mySet->index);
+
+        myBlock = block_lookup(myCache, currentAddress, mySet);
+        if(myBlock == NULL){
+            if(cacheParameters->traceFlag == 1)
+                fprintf(stdout, " miss");
+            misses++;
+        } else {
+            if(cacheParameters->traceFlag == 1)
+                fprintf(stdout, "  hit");
+            hits++;
+        }
+        
+        missRatio = (double) misses / (double) accessNumber;
+        if(cacheParameters->traceFlag == 1) {
+            fprintf(stdout, "%7lu%7lu%9lu", hits, misses, accessNumber);
+            fprintf(stdout, "%11.8f ", missRatio);
+            print_set(mySet);
+        }
+ 
+        if(myBlock == NULL){
+            write_cache(myCache, mySet, currentAddress, accessNumber);
+        } else {
+            if(strcmp("lru", myCache->replacementMode) == 0)
+                myBlock->accessTime = accessNumber;
+        }
+
+        myBlock = NULL;
+        mySet = NULL;
     }
 
     fclose(fin);
     return 0;
+}
+
+/**
+ * determines if token is a hex or int and assigns to value and returns
+ *
+ * PARAMETERS: char*
+ */
+unsigned long get_address(char* token)
+{
+    unsigned long value;
+    if (token[0] == '-') {
+        fprintf(stderr, "TERMINAL ERROR\n");
+        fprintf(stderr, "input file contains invalid address\n");
+        fprintf(stderr, "TERMINATING SIMULATION\n");
+        exit(1);
+    }
+    if (token[1] == 'x')
+        sscanf(token, "%lx", &value);
+    else
+        sscanf(token, "%lu", &value);
+    return value;
 }
 
 /**

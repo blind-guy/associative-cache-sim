@@ -9,7 +9,6 @@
 #ifndef CACHE_H
     #define CACHE_H
 
-
     // includes
     #include   <string.h>
     #include   <stdlib.h>
@@ -25,6 +24,10 @@
         struct Set *sets;
     };
 
+    // function prototypes
+    unsigned long get_tag(struct Cache *, unsigned long);
+    void write_cache(struct Cache *, struct Set *, unsigned long, unsigned long);
+    struct Block *block_lookup(struct Cache*, unsigned long, struct Set *);
+    struct Set *cache_lookup(struct Cache *, unsigned long);
     struct Cache *init_cache(unsigned long, unsigned long, int, char *);
-    void test_cache(struct Cache *);
 #endif

@@ -31,4 +31,5 @@
     // function prototypes
     int set_parameters(int, char **, struct CacheParameters *);
     void print_usage();
+    unsigned long get_address(char *);
 #endif   
